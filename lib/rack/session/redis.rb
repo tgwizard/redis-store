@@ -24,7 +24,7 @@ module Rack
         loop do
           sid = generate_sid
           first = with do |c|
-            [*c.setnx(sid.private_id, session, @default_options)].first
+            [*c.setnx(sid.private_id, session, @default_options.to_hash)].first
           end
           break sid if [1, true].include?(first)
         end
@@ -46,7 +46,7 @@ module Rack
 
       def write_session(req, sid, new_session, options)
         with_lock(req, false) do
-          with { |c| c.set sid.private_id, new_session, options }
+          with { |c| c.set(sid.private_id, new_session, options.to_hash) }
           sid
         end
       end
@@ -65,7 +65,7 @@ module Rack
         @default_options.fetch(:threadsafe, true)
       end
 
-      def with_lock(req, default=nil)
+      def with_lock(req, default = nil)
         @mutex.lock if req.multithread? && threadsafe?
         yield
       rescue Errno::ECONNREFUSED
